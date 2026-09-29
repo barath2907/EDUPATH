@@ -1,0 +1,24 @@
+{
+  "sources": [
+    {
+      "document": "Information_about_colleges_compressed.pdf",
+      "sha256": "1150eb41fde1052508c3e3fe8056331f335fd1a12d259081514ef6a8620cd545",
+      "document_year": 2023,
+      "authority": "Tamil Nadu Engineering Admissions",
+      "verification_status": "pending_source_url_verification"
+    },
+    {
+      "document": "9a2089c765a3c4a3de82.pdf",
+      "sha256": "d2554d9144e0ba07676a5ac8f94cdd8eef5fcf54a92e96ec1205df6a950d119e",
+      "document_year": 2024,
+      "authority": "Directorate of Technical Education, Chennai",
+      "verification_status": "pending_source_url_verification",
+      "privacy": "Only aggregated non-PII output is retained."
+    }
+  ],
+  "college_count": 450,
+  "resolved_college_branch_records": 3095,
+  "unresolved_college_branch_records": 165,
+  "rank_rows_aggregated_without_pii": 31788,
+  "rank_distribution_buckets": 1484
+}

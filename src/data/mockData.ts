@@ -1,0 +1,182 @@
+export const colleges = [
+  {
+    id: 1,
+    code: "1234",
+    name: "Anna University, Chennai",
+    location: "Chennai",
+    district: "Chennai",
+    type: "Government",
+    rating: 4.8,
+    established: 1978,
+    branches: [
+      { code: "CS", name: "Computer Science & Engineering", cutoff2023: 198.5, cutoff2022: 197.2, fees: 50000 },
+      { code: "EC", name: "Electronics & Communication", cutoff2023: 195.0, cutoff2022: 194.1, fees: 50000 },
+      { code: "ME", name: "Mechanical Engineering", cutoff2023: 180.5, cutoff2022: 179.0, fees: 50000 },
+      { code: "CE", name: "Civil Engineering", cutoff2023: 172.0, cutoff2022: 170.5, fees: 50000 },
+    ],
+  },
+  {
+    id: 2,
+    code: "2345",
+    name: "PSG College of Technology",
+    location: "Coimbatore",
+    district: "Coimbatore",
+    type: "Aided",
+    rating: 4.6,
+    established: 1951,
+    branches: [
+      { code: "CS", name: "Computer Science & Engineering", cutoff2023: 196.5, cutoff2022: 195.8, fees: 45000 },
+      { code: "EC", name: "Electronics & Communication", cutoff2023: 191.0, cutoff2022: 190.5, fees: 45000 },
+      { code: "IT", name: "Information Technology", cutoff2023: 193.0, cutoff2022: 192.2, fees: 45000 },
+      { code: "ME", name: "Mechanical Engineering", cutoff2023: 175.0, cutoff2022: 174.0, fees: 45000 },
+    ],
+  },
+  {
+    id: 3,
+    code: "3456",
+    name: "Coimbatore Institute of Technology",
+    location: "Coimbatore",
+    district: "Coimbatore",
+    type: "Aided",
+    rating: 4.4,
+    established: 1956,
+    branches: [
+      { code: "CS", name: "Computer Science & Engineering", cutoff2023: 190.0, cutoff2022: 188.5, fees: 42000 },
+      { code: "EC", name: "Electronics & Communication", cutoff2023: 185.5, cutoff2022: 184.0, fees: 42000 },
+      { code: "ME", name: "Mechanical Engineering", cutoff2023: 168.0, cutoff2022: 166.5, fees: 42000 },
+      { code: "EE", name: "Electrical & Electronics", cutoff2023: 170.0, cutoff2022: 168.5, fees: 42000 },
+    ],
+  },
+  {
+    id: 4,
+    code: "4567",
+    name: "National Institute of Technology, Trichy",
+    location: "Tiruchirappalli",
+    district: "Tiruchirappalli",
+    type: "NIT",
+    rating: 4.9,
+    established: 1964,
+    branches: [
+      { code: "CS", name: "Computer Science & Engineering", cutoff2023: 199.0, cutoff2022: 198.7, fees: 75000 },
+      { code: "EC", name: "Electronics & Communication", cutoff2023: 197.5, cutoff2022: 197.0, fees: 75000 },
+      { code: "ME", name: "Mechanical Engineering", cutoff2023: 192.0, cutoff2022: 191.5, fees: 75000 },
+    ],
+  },
+  {
+    id: 5,
+    code: "5678",
+    name: "Sri Venkateswara College of Engineering",
+    location: "Sriperumbudur",
+    district: "Kanchipuram",
+    type: "Private",
+    rating: 4.2,
+    established: 1988,
+    branches: [
+      { code: "CS", name: "Computer Science & Engineering", cutoff2023: 180.5, cutoff2022: 178.0, fees: 85000 },
+      { code: "EC", name: "Electronics & Communication", cutoff2023: 175.0, cutoff2022: 173.5, fees: 85000 },
+      { code: "IT", name: "Information Technology", cutoff2023: 178.0, cutoff2022: 176.5, fees: 85000 },
+    ],
+  },
+  {
+    id: 6,
+    code: "6789",
+    name: "Government College of Technology",
+    location: "Coimbatore",
+    district: "Coimbatore",
+    type: "Government",
+    rating: 4.5,
+    established: 1945,
+    branches: [
+      { code: "CS", name: "Computer Science & Engineering", cutoff2023: 188.0, cutoff2022: 186.5, fees: 15000 },
+      { code: "ME", name: "Mechanical Engineering", cutoff2023: 162.0, cutoff2022: 160.5, fees: 15000 },
+      { code: "CE", name: "Civil Engineering", cutoff2023: 155.0, cutoff2022: 154.0, fees: 15000 },
+    ],
+  },
+];
+
+export const cutoffHistory = [
+  { year: "2019", avgCutoff: 178.5 },
+  { year: "2020", avgCutoff: 181.2 },
+  { year: "2021", avgCutoff: 179.8 },
+  { year: "2022", avgCutoff: 183.4 },
+  { year: "2023", avgCutoff: 185.6 },
+];
+
+export const categories = ["OC", "BC", "BCM", "MBC", "SC", "SCA", "ST"];
+
+export const districts = [
+  "Ariyalur",
+  "Chengalpattu",
+  "Chennai",
+  "Coimbatore",
+  "Cuddalore",
+  "Dharmapuri",
+  "Dindigul",
+  "Erode",
+  "Kallakurichi",
+  "Kancheepuram",
+  "Kanyakumari",
+  "Karur",
+  "Krishnagiri",
+  "Madurai",
+  "Nagappattinam",
+  "Namakkal",
+  "Perambalur",
+  "Pudukkottai",
+  "Ramanathapuram",
+  "Ranipet",
+  "Salem",
+  "Sivagangai",
+  "Tenkasi",
+  "Thanjavur",
+  "The Nilgiris",
+  "Theni",
+  "Thiruvallur",
+  "Thiruvarur",
+  "Thiruvannamalai",
+  "Thiruppathur",
+  "Thoothukudi",
+  "Tiruchirappalli",
+  "Tirunelveli",
+  "Tirupattur",
+  "Tiruppur",
+  "Vellore",
+  "Villupuram",
+  "Virudhunagar",
+];
+
+export const branchOptions = [
+  { code: "CS", name: "Computer Science & Engineering" },
+  { code: "EC", name: "Electronics & Communication Engineering" },
+  { code: "IT", name: "Information Technology" },
+  { code: "ME", name: "Mechanical Engineering" },
+  { code: "CE", name: "Civil Engineering" },
+  { code: "EE", name: "Electrical & Electronics Engineering" },
+  { code: "CH", name: "Chemical Engineering" },
+  { code: "BT", name: "Biotechnology" },
+];
+
+export const counsellorSuggestions = [
+  "What is the TNEA cutoff calculation method?",
+  "Which colleges offer Computer Science in Chennai?",
+  "What are the reservation categories in TNEA 2024?",
+  "How does the counselling process work?",
+  "What documents are required for TNEA?",
+  "What is the difference between aided and unaided colleges?",
+];
+
+export const mockChatHistory = [
+  {
+    role: "assistant",
+    content: "Hello! I'm your EduPath AI Counsellor. I can help you with TNEA admissions, college selection, cutoff information, and more. What would you like to know?",
+    timestamp: "10:00 AM",
+  },
+];
+
+export const knowledgeBaseArticles = [
+  { title: "TNEA 2024 Information Brochure", year: 2024, type: "Official", pages: 48 },
+  { title: "Reservation & Category Guidelines", year: 2024, type: "Official", pages: 12 },
+  { title: "Counselling Schedule 2024", year: 2024, type: "Official", pages: 6 },
+  { title: "Eligibility Criteria", year: 2024, type: "Official", pages: 8 },
+  { title: "College & Branch Information", year: 2023, type: "Reference", pages: 120 },
+];

@@ -1,0 +1,18 @@
+{
+  "short_name": "EduPath",
+  "name": "EduPath - AI College Admission & Counselling",
+  "description": "AI-Powered College Admission and TNEA Counselling Platform",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0B0F17",
+  "theme_color": "#2563EB",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}
