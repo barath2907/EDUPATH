@@ -67,30 +67,31 @@ async function apiRequest<T = any>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // First try direct HTTP fetch to the server
-  try {
-    const res = await fetch(path, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+  // If an external backend API URL is explicitly configured, try remote HTTP fetch
+  const externalApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
+  if (externalApiBase) {
+    try {
+      const fullUrl = `${externalApiBase.replace(/\/$/, "")}${path}`;
+      const res = await fetch(fullUrl, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
 
-    if (res.ok) {
-      return (await res.json()) as T;
-    }
-    // If not a 404, throw server error
-    if (res.status !== 404) {
-      const err = await res.json().catch(() => ({ error: "Request failed" }));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-  } catch (netErr: any) {
-    // If network fetch fails or 404s, fall back to in-app backend router
-    if (!netErr.message?.includes("404") && !netErr.message?.includes("Failed to fetch")) {
-      throw netErr;
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
+        return (await res.json()) as T;
+      }
+      if (res.status < 500 && contentType.includes("application/json")) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+    } catch (netErr: any) {
+      console.warn("[EduPath API] Remote API failed, fallback to in-app router:", netErr);
     }
   }
 
-  // In-app direct server router fallback
+  // In-app direct server router (handles auth, colleges, recommendations, AI counsellor, reports offline & on static hosts)
   const response = await handleApiRequest({
     method,
     url: path,
