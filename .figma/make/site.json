@@ -1,7 +1,7 @@
 {
-  "description": "This web application streamlines project management for software developers, enhancing collaboration and productivity through intuitive task tracking and communication tools.",
+  "description": "EduPath — AI-Powered College Admission and TNEA Counselling Platform for engineering aspirants.",
   "robots": {
-    "index": false
+    "index": true
   },
   "accessibility": {
     "addBypassLinks": false,
