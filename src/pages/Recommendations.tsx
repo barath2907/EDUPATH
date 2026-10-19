@@ -12,6 +12,7 @@ import {
 import PageFlow from "../components/PageFlow";
 import SyncStatusBanner from "../components/SyncStatusBanner";
 import { districts, branchOptions } from "../data/mockData";
+import { CANONICAL_TN_DISTRICTS, normalizeDistrict } from "../lib/tneaDistrictService";
 import { EduPathAPI } from "../lib/apiClient";
 import { type RecommendedOption } from "../lib/recommendationEngine";
 import { useAuth } from "../contexts/AuthContext";
@@ -46,6 +47,8 @@ export default function Recommendations() {
   const [search, setSearch] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("All");
   const [selectedBranch, setSelectedBranch] = useState("All");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All");
+  const [expandedCardKey, setExpandedCardKey] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(
     new Set(savedColleges ? savedColleges.map(s => `${s.college_code}-${s.branch_code}`) : [])
   );
@@ -60,14 +63,22 @@ export default function Recommendations() {
     if (savedColleges) setSavedIds(new Set(savedColleges.map(s => `${s.college_code}-${s.branch_code}`)));
   }, [savedColleges]);
 
-  // Load all colleges for full-text search
+  // Canonical Tamil Nadu districts list (all 38 districts)
+  const districtOptions = useMemo(() => {
+    return CANONICAL_TN_DISTRICTS.map(d => d.canonicalName).sort();
+  }, []);
+
+  // Load all colleges for full-database fallback search
   useEffect(() => {
     getCollegesWithCutoffs(myCategory).then(setAllColleges).catch(() => {});
   }, [myCategory]);
 
+  // Fetch recommendations from backend with district and branch filters applied at query level
   useEffect(() => {
+    let isCancelled = false;
     let cutoffVal = academicRecord?.cutoff ?? 175.0;
     let cat = academicRecord?.category ?? profile?.category ?? "OC";
+
     const fetchRecs = async () => {
       setLoadingData(true);
       if (user && !academicRecord) {
@@ -79,58 +90,147 @@ export default function Recommendations() {
           }
         } catch (e) { console.warn("Using defaults:", e); }
       }
-      setMyCutoff(cutoffVal); setMyCategory(cat);
+      if (isCancelled) return;
+      setMyCutoff(cutoffVal);
+      setMyCategory(cat);
+
       try {
-        const data = await EduPathAPI.recommendations.get({ studentCutoff: cutoffVal, community: cat, isGovernmentSchool75Quota: !!profile?.is_government_school_quota });
-        setRecommendations(data);
-      } catch (err) { console.error("Recommendations error:", err); }
-      finally { setLoadingData(false); }
+        const data = await EduPathAPI.recommendations.get({
+          studentCutoff: cutoffVal,
+          community: cat,
+          preferredDistrict: selectedDistrict !== "All" ? selectedDistrict : undefined,
+          preferredBranches: selectedBranch !== "All" ? [selectedBranch] : undefined,
+          isGovernmentSchool75Quota: !!profile?.is_government_school_quota,
+        });
+        if (!isCancelled) {
+          setRecommendations(data);
+        }
+      } catch (err) {
+        console.error("Recommendations error:", err);
+      } finally {
+        if (!isCancelled) setLoadingData(false);
+      }
     };
+
     fetchRecs();
-  }, [user, profile, academicRecord]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, profile, academicRecord, selectedDistrict, selectedBranch]);
 
   const enhanced: EnhancedOption[] = useMemo(() => {
     return recommendations.map(r => {
       const fit = computeFitScore({
-        studentCutoff: myCutoff ?? 175, studentCategory: myCategory,
+        studentCutoff: myCutoff ?? 175,
+        studentCategory: myCategory,
         preferredBranches: profile?.preferred_branches ?? undefined,
-        preferredDistrict: profile?.preferred_district ?? undefined,
+        preferredDistrict: selectedDistrict !== "All" ? selectedDistrict : profile?.preferred_district ?? undefined,
         budget: profile?.budget ?? undefined,
         isGovernmentSchool75Quota: !!profile?.is_government_school_quota,
-        branchCode: r.branchCode, branchName: r.branchName, district: r.district,
-        collegeType: r.collegeType, historicalCutoff2023: r.historicalCutoff2023,
-        historicalCutoff2024: r.historicalCutoff2024, historicalCutoff2025: r.historicalCutoff2025,
-        annualFees: r.annualFees, mlPredictionScore: r.predictionResult?.predictionScore,
+        branchCode: r.branchCode,
+        branchName: r.branchName,
+        district: r.district,
+        collegeType: r.collegeType,
+        historicalCutoff2023: r.historicalCutoff2023,
+        historicalCutoff2024: r.historicalCutoff2024,
+        historicalCutoff2025: r.historicalCutoff2025,
+        annualFees: r.annualFees,
+        mlPredictionScore: r.predictionResult?.predictionScore,
       });
       return { ...r, fitScore: fit.total, fitClassification: fit.classification, fitLabel: fit.label, fitExplanation: fit.explanation, fitDimensions: fit.dimensions };
     }).sort((a, b) => b.fitScore - a.fitScore);
-  }, [recommendations, myCutoff, myCategory, profile]);
+  }, [recommendations, myCutoff, myCategory, profile, selectedDistrict]);
+
+  // Context-aware category counts: reflects active district and branch filters
+  const categoryCounts = useMemo(() => {
+    const itemsInContext = enhanced.filter(r => {
+      if (selectedDistrict !== "All") {
+        const canonicalReq = normalizeDistrict(selectedDistrict);
+        const canonicalCol = normalizeDistrict(r.district);
+        if (canonicalCol.toLowerCase() !== canonicalReq.toLowerCase()) return false;
+      }
+      if (selectedBranch !== "All" && r.branchCode !== selectedBranch) return false;
+      const q = search.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        r.collegeName.toLowerCase().includes(q) ||
+        r.location.toLowerCase().includes(q) ||
+        r.district.toLowerCase().includes(q) ||
+        r.branchName.toLowerCase().includes(q) ||
+        r.branchCode.toLowerCase().includes(q) ||
+        r.collegeCode.includes(q) ||
+        (r.officialName?.toLowerCase().includes(q) ?? false)
+      );
+    });
+
+    const counts: Record<string, number> = {
+      All: itemsInContext.length,
+      "Strong Match": 0,
+      Match: 0,
+      Competitive: 0,
+      Challenging: 0,
+    };
+    for (const r of itemsInContext) {
+      const cat = r.recommendationCategory || (r.suitability === "Safe" ? "Strong Match" : r.suitability === "Reach" ? "Challenging" : "Match");
+      if (counts[cat] !== undefined) counts[cat]++;
+    }
+    return counts;
+  }, [enhanced, selectedDistrict, selectedBranch, search]);
 
   const filtered = enhanced.filter(r => {
-    if (selectedDistrict !== "All" && r.district.toLowerCase() !== selectedDistrict.toLowerCase()) return false;
+    if (selectedDistrict !== "All") {
+      const canonicalReq = normalizeDistrict(selectedDistrict);
+      const canonicalCol = normalizeDistrict(r.district);
+      if (canonicalCol.toLowerCase() !== canonicalReq.toLowerCase()) return false;
+    }
     if (selectedBranch !== "All" && r.branchCode !== selectedBranch) return false;
+    if (selectedCategoryFilter !== "All") {
+      const cat = r.recommendationCategory || (r.suitability === "Safe" ? "Strong Match" : r.suitability === "Reach" ? "Challenging" : "Match");
+      if (cat !== selectedCategoryFilter) return false;
+    }
     const q = search.toLowerCase().trim();
     if (!q) return true;
-    return r.collegeName.toLowerCase().includes(q) || r.location.toLowerCase().includes(q) || r.district.toLowerCase().includes(q) || r.branchName.toLowerCase().includes(q) || r.branchCode.toLowerCase().includes(q) || r.collegeCode.includes(q) || (r.officialName?.toLowerCase().includes(q) ?? false);
+    return (
+      r.collegeName.toLowerCase().includes(q) ||
+      r.location.toLowerCase().includes(q) ||
+      r.district.toLowerCase().includes(q) ||
+      r.branchName.toLowerCase().includes(q) ||
+      r.branchCode.toLowerCase().includes(q) ||
+      r.collegeCode.includes(q) ||
+      (r.officialName?.toLowerCase().includes(q) ?? false)
+    );
   });
 
-  // Full-database search results (shown when search term is set but filtered is empty)
+  // Full-database search results (shown when filtered is empty for the active filter set)
   const fullSearchResults = useMemo(() => {
+    if (filtered.length > 0) return [];
     const q = search.toLowerCase().trim();
-    if (!q || filtered.length > 0) return [];
+    if (!q && selectedDistrict === "All") return [];
     const results: Array<{ college: CollegeWithBranches; branch: BranchSummary; margin: number }> = [];
     for (const college of allColleges) {
-      const nameMatch = college.name.toLowerCase().includes(q) || (college.official_name?.toLowerCase().includes(q) ?? false) || String(college.code).includes(q) || college.location.toLowerCase().includes(q) || college.district.toLowerCase().includes(q);
-      if (!nameMatch) continue;
+      if (selectedDistrict !== "All") {
+        const canonicalReq = normalizeDistrict(selectedDistrict);
+        const canonicalCol = normalizeDistrict(college.district);
+        if (canonicalCol.toLowerCase() !== canonicalReq.toLowerCase()) continue;
+      }
+      if (q) {
+        const nameMatch =
+          college.name.toLowerCase().includes(q) ||
+          (college.official_name?.toLowerCase().includes(q) ?? false) ||
+          String(college.code).includes(q) ||
+          college.location.toLowerCase().includes(q) ||
+          college.district.toLowerCase().includes(q);
+        if (!nameMatch) continue;
+      }
       for (const branch of college.branches) {
         if (selectedBranch !== "All" && branch.code !== selectedBranch) continue;
-        if (selectedDistrict !== "All" && college.district.toLowerCase() !== selectedDistrict.toLowerCase()) continue;
         const latestCutoff = branch.cutoff2025 || branch.cutoff2024 || branch.cutoff2023;
         const margin = (myCutoff ?? 175) - latestCutoff;
         results.push({ college, branch, margin });
       }
     }
-    return results.sort((a, b) => b.margin - a.margin).slice(0, 20);
+    return results.sort((a, b) => b.margin - a.margin).slice(0, 25);
   }, [search, filtered.length, allColleges, selectedBranch, selectedDistrict, myCutoff]);
 
   const toggleSave = async (rec: EnhancedOption) => {
@@ -161,12 +261,26 @@ export default function Recommendations() {
       <SyncStatusBanner />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl text-[#0f1e33] mb-1">College Recommendations</h1>
+          <h1 className="font-display text-2xl sm:text-3xl text-[#0f1e33] mb-1 flex items-center gap-2 flex-wrap">
+            <span>College Recommendations</span>
+            {selectedDistrict !== "All" && (
+              <span className="text-xs sm:text-sm font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <MapPin size={12} className="text-amber-600" />
+                {selectedDistrict} District
+              </span>
+            )}
+          </h1>
           {myCutoff ? (
             <p className="text-gray-500 text-xs sm:text-sm flex items-center gap-2 flex-wrap">
               <span>Cutoff: <strong className="text-amber-600 font-semibold">{myCutoff.toFixed(2)}</strong> / 200</span>
               <span>•</span>
               <span>Category: <strong className="text-slate-800 font-medium">{myCategory}</strong></span>
+              {selectedDistrict !== "All" && (
+                <>
+                  <span>•</span>
+                  <span>District: <strong className="text-slate-800 font-semibold">{selectedDistrict}</strong></span>
+                </>
+              )}
               {profile?.is_government_school_quota && <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-semibold">7.5% Govt School Quota</span>}
             </p>
           ) : (<p className="text-gray-500 text-xs"><Link to="/calculator" className="text-amber-600 font-semibold underline">Calculate your cutoff</Link> to view tailored recommendations.</p>)}
@@ -194,26 +308,95 @@ export default function Recommendations() {
                 <Search size={16} className="absolute left-3 top-3 text-gray-400" />
                 <input type="text" placeholder="Search college, code, city, branch..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500" />
               </div>
-              <select value={selectedDistrict} onChange={e => setSelectedDistrict(e.target.value)} className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 text-gray-700 bg-white">
-                <option value="All">All Districts</option>
-                {districts.map(d => <option key={d} value={d}>{d}</option>)}
+              <select
+                value={selectedDistrict}
+                onChange={e => {
+                  setSelectedDistrict(e.target.value);
+                  setSelectedCategoryFilter("All");
+                }}
+                className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 text-gray-700 bg-white"
+              >
+                <option value="All">All Districts (Tamil Nadu)</option>
+                {districtOptions.map(d => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
               </select>
               <select value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)} className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 text-gray-700 bg-white">
                 <option value="All">All Engineering Branches</option>
                 {branchOptions.map(b => <option key={b.code} value={b.code}>{b.code} - {b.name}</option>)}
               </select>
             </div>
+
+            {/* 4 Standard Recommendation Categories Filter Bar */}
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Categories:</span>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                {(["All", "Strong Match", "Match", "Competitive", "Challenging"] as const).map(catName => (
+                  <button
+                    key={catName}
+                    onClick={() => setSelectedCategoryFilter(catName)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap border ${
+                      selectedCategoryFilter === catName
+                        ? catName === "Strong Match"
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                          : catName === "Match"
+                          ? "bg-amber-600 text-white border-amber-600 shadow-2xs"
+                          : catName === "Competitive"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                          : catName === "Challenging"
+                          ? "bg-rose-600 text-white border-rose-600 shadow-2xs"
+                          : "bg-[#0f1e33] text-white border-[#0f1e33] shadow-2xs"
+                        : "bg-white text-slate-700 border-gray-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{catName}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        selectedCategoryFilter === catName ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {categoryCounts[catName] || 0}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <p className="text-[11px] text-gray-400 flex items-center gap-1"><Info size={12} />Fit Score: Cutoff 40% + Branch 20% + ML 15% + Location 10% + Budget 10% + Trend 5% — Not an admission probability</p>
           </div>
 
-          {loadingData ? (<div className="p-8 text-center text-xs text-gray-500">Loading personalized recommendations from TNEA database...</div>)
-          : filtered.length === 0 ? (
+          {loadingData ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              <span>Querying verified TNEA colleges for {selectedDistrict !== "All" ? `${selectedDistrict} District` : "all Tamil Nadu districts"}...</span>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="space-y-4">
-              {fullSearchResults.length > 0 ? (
+              {/* Category Mismatch Helper */}
+              {selectedCategoryFilter !== "All" && categoryCounts["All"] > 0 ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center space-y-3">
+                  <p className="text-sm font-semibold text-amber-900">
+                    No colleges match the "{selectedCategoryFilter}" tier in {selectedDistrict === "All" ? "Tamil Nadu" : `${selectedDistrict} District`}.
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    There are <strong>{categoryCounts["All"]}</strong> colleges available in {selectedDistrict === "All" ? "Tamil Nadu" : selectedDistrict} under other suitability tiers.
+                  </p>
+                  <button
+                    onClick={() => setSelectedCategoryFilter("All")}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    View All {categoryCounts["All"]} {selectedDistrict !== "All" ? selectedDistrict : ""} Colleges
+                  </button>
+                </div>
+              ) : fullSearchResults.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 flex items-center gap-2">
-                    <Info size={14} className="text-amber-500 shrink-0" />
-                    <span>Showing <strong>{fullSearchResults.length}</strong> results from all 461 TNEA colleges. These may be outside your personalised cutoff range — cutoff gap shown for reference.</span>
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Info size={14} className="text-amber-500 shrink-0" />
+                      <span>Showing <strong>{fullSearchResults.length}</strong> verified colleges in {selectedDistrict !== "All" ? `${selectedDistrict} District` : "all districts"} from the TNEA master dataset outside your standard cutoff range.</span>
+                    </div>
                   </div>
                   {fullSearchResults.map(({ college, branch, margin }, idx) => (
                     <div key={idx} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm hover:border-amber-300 transition-all">
@@ -233,7 +416,7 @@ export default function Recommendations() {
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div><span className="text-gray-400 block text-[11px]">Branch</span><strong className="text-slate-800">{branch.code} - {branch.name}</strong></div>
-                        <div><span className="text-gray-400 block text-[11px]">Historical Cutoff (2023|2024)</span><strong className="text-slate-800 font-mono">{branch.cutoff2023.toFixed(1)} | {(branch.cutoff2024 || branch.cutoff2023).toFixed(1)}</strong></div>
+                        <div><span className="text-gray-400 block text-[11px]">Historical Cutoff (2023|2024|2025)</span><strong className="text-slate-800 font-mono">{branch.cutoff2023.toFixed(1)} | {(branch.cutoff2024 || branch.cutoff2023).toFixed(1)} | {(branch.cutoff2025 || branch.cutoff2024 || branch.cutoff2023).toFixed(1)}</strong></div>
                         <div><span className="text-gray-400 block text-[11px]">Your Cutoff Gap</span><strong className={margin >= 0 ? "text-emerald-700" : "text-rose-600"}>{margin >= 0 ? "+" : ""}{margin.toFixed(2)} marks</strong></div>
                         <div><span className="text-gray-400 block text-[11px]">Annual Fees</span><strong className="text-slate-800">Rs.{(branch.fees / 1000).toFixed(0)}K/yr</strong></div>
                       </div>
@@ -241,11 +424,28 @@ export default function Recommendations() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-500">No matching colleges found for the selected filters.</div>
+                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-500 space-y-3">
+                  <p className="text-base font-semibold text-slate-800">No matching colleges found for the selected filters.</p>
+                  <p className="text-xs text-gray-500">
+                    No verified institutional records match {selectedDistrict !== "All" ? `district "${selectedDistrict}"` : "the active filters"}.
+                  </p>
+                  {(selectedDistrict !== "All" || selectedBranch !== "All" || selectedCategoryFilter !== "All" || search) && (
+                    <button
+                      onClick={() => {
+                        setSelectedDistrict("All");
+                        setSelectedBranch("All");
+                        setSelectedCategoryFilter("All");
+                        setSearch("");
+                      }}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl transition-colors"
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          )
-          : (
+          ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-gray-500 px-1">
                 <span>Showing <strong>{Math.min(displayCount, filtered.length)}</strong> of <strong>{filtered.length}</strong> results — ranked by Personalized Fit Score</span>
@@ -254,22 +454,48 @@ export default function Recommendations() {
               {filtered.slice(0, displayCount).map((r, idx) => {
                 const key = `${r.collegeCode}-${r.branchCode}`;
                 const isSaved = savedIds.has(key);
+                const isExpanded = expandedCardKey === key;
                 const colors = getClassificationColor(r.fitClassification);
                 const margin = r.studentCutoff - r.historicalCutoff2024;
-                const trend = r.historicalCutoff2024 - r.historicalCutoff2023;
+                const trend = r.trendSummary || {
+                  direction: r.historicalCutoff2024 > r.historicalCutoff2023 ? "Increasing" : "Stable",
+                  absoluteChange: r.historicalCutoff2024 - r.historicalCutoff2023,
+                  volatility: 0.8,
+                  directionColor: { bg: "#eff6ff", text: "#1d4ed8", border: "#93c5fd" },
+                };
+                const catName = r.recommendationCategory || (r.suitability === "Safe" ? "Strong Match" : r.suitability === "Reach" ? "Challenging" : "Match");
+                const catStyle = catName === "Strong Match"
+                  ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                  : catName === "Match"
+                  ? "bg-amber-100 text-amber-900 border-amber-300"
+                  : catName === "Competitive"
+                  ? "bg-blue-100 text-blue-900 border-blue-300"
+                  : "bg-rose-100 text-rose-900 border-rose-300";
+
                 return (
-                  <div key={idx} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm hover:border-amber-300 transition-all">
+                  <div key={idx} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-xs hover:border-amber-300 transition-all space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">#{idx+1} · {r.collegeCode}</span>
                           <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{r.collegeType}</span>
                           {r.naacGrade && <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">NAAC {r.naacGrade}</span>}
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border" style={{ background: colors.bg, color: colors.text, borderColor: colors.border }}>{r.fitScore}/100 · {r.fitLabel}</span>
+                          
+                          {/* Standard 4-Tier Category Badge */}
+                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border flex items-center gap-1 ${catStyle}`}>
+                            <ShieldCheck size={12} />
+                            {catName}
+                          </span>
+
+                          {/* Fit Score Badge */}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border" style={{ background: colors.bg, color: colors.text, borderColor: colors.border }}>
+                            {r.fitScore}/100 · {r.fitLabel}
+                          </span>
                         </div>
                         <h3 className="font-display text-base sm:text-lg text-[#0f1e33] font-semibold leading-snug">{r.collegeName}</h3>
                         <p className="text-xs text-gray-500 flex items-center gap-1"><MapPin size={13} className="text-amber-500 shrink-0" />{r.location}, {r.district} District</p>
                       </div>
+
                       <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
                         <button onClick={() => { setSelectedForCompare(s => { const n = new Set(s); if (n.has(key)) n.delete(key); else if (n.size < 5) n.add(key); return n; }); }} className={`text-xs px-3 py-2 rounded-xl font-semibold transition-all border flex items-center gap-1 ${selectedForCompare.has(key) ? "bg-blue-50 text-blue-700 border-blue-300" : "bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600"}`}><Scale size={12} />{selectedForCompare.has(key) ? "Selected" : "Compare"}</button>
                         <button onClick={() => toggleSave(r)} disabled={savingId === key} className={`flex items-center justify-center gap-1.5 text-xs px-3.5 py-2 rounded-xl font-semibold transition-all ${isSaved ? "bg-amber-50 text-amber-700 border border-amber-300" : "bg-slate-100 hover:bg-amber-50 text-slate-700 border border-slate-200"}`}>
@@ -277,21 +503,137 @@ export default function Recommendations() {
                         </button>
                       </div>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                      <div><span className="text-gray-400 block text-[11px]">Branch</span><strong className="text-slate-800">{r.branchCode} - {r.branchName}</strong></div>
+
+                    {/* Multi-Year Metrics Row */}
+                    <div className="pt-2 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                       <div>
-                        <span className="text-gray-400 block text-[11px]">Historical (2023|2024|2025)</span>
+                        <span className="text-gray-400 block text-[11px]">Branch</span>
+                        <strong className="text-slate-800">{r.branchCode} - {r.branchName}</strong>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[11px]">Historical Cutoffs (23|24|25)</span>
                         <strong className="text-slate-800 font-mono flex items-center gap-1">
                           {r.historicalCutoff2023.toFixed(1)} | {r.historicalCutoff2024.toFixed(1)} | {r.historicalCutoff2025.toFixed(1)}
-                          {trend < -0.5 ? <TrendingDown size={12} className="text-emerald-500" /> : trend > 0.5 ? <TrendingUp size={12} className="text-rose-500" /> : <Minus size={12} className="text-gray-400" />}
+                          {trend.direction === "Surging" || trend.direction === "Increasing" ? (
+                            <TrendingUp size={13} className="text-rose-500" />
+                          ) : trend.direction === "Softening" || trend.direction === "Decreasing" ? (
+                            <TrendingDown size={13} className="text-emerald-500" />
+                          ) : (
+                            <Minus size={13} className="text-gray-400" />
+                          )}
                         </strong>
                       </div>
-                      <div><span className="text-gray-400 block text-[11px]">Cutoff Gap</span><strong className={margin >= 0 ? "text-emerald-700" : "text-rose-600"}>{margin >= 0 ? "+" : ""}{margin.toFixed(2)} marks</strong></div>
-                      <div><span className="text-gray-400 block text-[11px]">Fees & Intake</span><strong className="text-slate-800">Rs.{(r.annualFees/1000).toFixed(0)}K/yr . {r.intakeSeats} Seats</strong></div>
+                      <div>
+                        <span className="text-gray-400 block text-[11px]">Cutoff Gap vs You</span>
+                        <strong className={margin >= 0 ? "text-emerald-700 font-bold" : "text-rose-600 font-bold"}>
+                          {margin >= 0 ? "+" : ""}{margin.toFixed(2)} marks
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[11px]">Fees & Intake</span>
+                        <strong className="text-slate-800">Rs.{(r.annualFees/1000).toFixed(0)}K/yr · {r.intakeSeats} Seats</strong>
+                      </div>
                     </div>
-                    <div className="mt-3 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
+
+                    {/* Adaptive Trend & Competitiveness Highlights Bar */}
+                    <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-2.5 flex items-center justify-between gap-2 flex-wrap text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Trend direction badge */}
+                        <span
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1"
+                          style={{
+                            background: trend.directionColor?.bg || "#eff6ff",
+                            color: trend.directionColor?.text || "#1e40af",
+                            borderColor: trend.directionColor?.border || "#93c5fd",
+                          }}
+                        >
+                          {trend.direction} Trend ({trend.absoluteChange >= 0 ? `+${trend.absoluteChange.toFixed(2)}` : trend.absoluteChange.toFixed(2)} pts)
+                        </span>
+
+                        {/* Competitiveness indicator */}
+                        {r.competitivenessIndicator && (
+                          <span
+                            className="text-[11px] font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1"
+                            style={{
+                              background: r.competitivenessIndicator.badgeColor.bg,
+                              color: r.competitivenessIndicator.badgeColor.text,
+                              borderColor: r.competitivenessIndicator.badgeColor.border,
+                            }}
+                          >
+                            <ShieldCheck size={12} />
+                            {r.competitivenessIndicator.level} Demand ({r.competitivenessIndicator.competitivenessIndex}/100)
+                          </span>
+                        )}
+
+                        {/* ML Prediction */}
+                        <span className="text-[11px] font-medium text-slate-600 bg-white border border-gray-200 px-2 py-0.5 rounded-lg">
+                          ML Prob: <strong className="text-slate-800">{r.adaptivePrediction?.trendAwareScore ?? r.predictionResult.predictionScore}%</strong> (RF 40% + XGB 60%)
+                        </span>
+                      </div>
+
+                      {/* Expand / Collapse Button */}
+                      <button
+                        onClick={() => setExpandedCardKey(isExpanded ? null : key)}
+                        className="text-[11px] font-semibold text-amber-700 hover:text-amber-800 underline flex items-center gap-1"
+                      >
+                        {isExpanded ? "Hide Details" : "View Demand Signals & Factors →"}
+                      </button>
+                    </div>
+
+                    {/* Expandable Signals & Rationale Panel */}
+                    {isExpanded && (
+                      <div className="bg-amber-50/40 border border-amber-200/80 rounded-xl p-3.5 text-xs space-y-3 transition-all">
+                        {/* Contributing Factors */}
+                        {r.contributingFactors && r.contributingFactors.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="font-bold text-slate-800 text-[11px] uppercase tracking-wider block">
+                              Key Recommendation Signals:
+                            </span>
+                            <ul className="list-disc list-inside space-y-0.5 text-slate-700">
+                              {r.contributingFactors.map((f, i) => (
+                                <li key={i}>{f}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Competitiveness Decomposition */}
+                        {r.competitivenessIndicator?.signals && (
+                          <div className="space-y-1.5 pt-2 border-t border-amber-200/60">
+                            <span className="font-bold text-slate-800 text-[11px] uppercase tracking-wider block">
+                              Demand Signal Breakdown (Transparent Evaluation):
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {r.competitivenessIndicator.signals.map(s => (
+                                <div key={s.name} className="bg-white/80 border border-amber-100 rounded-lg p-2 text-[11px]">
+                                  <div className="flex justify-between font-semibold text-slate-800">
+                                    <span>{s.name}</span>
+                                    <span>{s.score}/100</span>
+                                  </div>
+                                  <p className="text-gray-500 text-[10px] mt-0.5">{s.description}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Link to Trend Dashboard */}
+                        <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-gray-500">
+                          <span>Verified against official TNEA {r.sourceYear} allotment records.</span>
+                          <Link
+                            to="/trends"
+                            className="text-amber-700 hover:text-amber-900 font-bold underline flex items-center gap-1"
+                          >
+                            Explore interactive multi-year chart in Trend Dashboard →
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fit breakdown progress bars */}
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-slate-700 flex items-center gap-1"><Sparkles size={12} className="text-amber-500" />Fit Breakdown</span>
+                        <span className="font-semibold text-slate-700 flex items-center gap-1"><Sparkles size={12} className="text-amber-500" />Fit Score Dimensions</span>
                         <span className="text-gray-500 text-[11px] max-w-xs truncate">{r.fitExplanation.slice(0,80)}{r.fitExplanation.length>80?"...":""}</span>
                       </div>
                       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">

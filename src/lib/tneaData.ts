@@ -8,8 +8,8 @@
  * 5. Official Source Metadata & Data Verification Tracking
  */
 
-import { supabase, supabaseConfigured } from "./supabase";
-import { colleges as mockColleges, cutoffHistory as mockHistory } from "../data/mockData";
+import { supabase, supabaseConfigured } from "./supabase.ts";
+import { colleges as mockColleges, cutoffHistory as mockHistory } from "../data/mockData.ts";
 
 // ──────────────────────────────────────────────
 // Verification & Source Metadata Interface
@@ -166,7 +166,7 @@ export interface YearlyCutoff { year: string; avgCutoff: number; }
 // Master Institutional Dataset (Expanded & Standardized)
 // Single Source of Truth backed by Official TNEA 2023-2025 Data
 // ──────────────────────────────────────────────
-import { TNEA_461_COLLEGES } from "../data/tneaCollegesMaster";
+import { TNEA_461_COLLEGES } from "../data/tneaCollegesMaster.ts";
 
 // ──────────────────────────────────────────────
 // Master Institutional Dataset (Expanded & Standardized)

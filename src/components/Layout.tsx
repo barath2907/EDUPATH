@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, User, Calculator, BookOpen, MessageSquare,
-  FileText, BarChart2, LogOut, Menu, X, GraduationCap, Bell,
+  FileText, BarChart2, TrendingUp, Compass, LogOut, Menu, X, GraduationCap, Bell,
   ChevronRight, WifiOff, ShieldCheck, ArrowLeft, Globe,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -14,7 +14,9 @@ const NAV_DEFS = [
   { path: "/dashboard",       icon: LayoutDashboard, key: "nav.dashboard" },
   { path: "/profile",         icon: User,            key: "nav.profile" },
   { path: "/calculator",      icon: Calculator,      key: "nav.calculator" },
+  { path: "/insights",        icon: Compass,         key: "nav.insights" },
   { path: "/recommendations", icon: BookOpen,        key: "nav.recommendations" },
+  { path: "/trends",          icon: TrendingUp,      key: "nav.trends" },
   { path: "/counsellor",      icon: MessageSquare,   key: "nav.counsellor" },
   { path: "/report",          icon: FileText,        key: "nav.report" },
   { path: "/compare",         icon: BarChart2,       key: "nav.compare" },

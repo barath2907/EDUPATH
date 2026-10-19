@@ -115,9 +115,18 @@ function MarkdownMessage({ content }: { content: string }) {
   return <div className="space-y-0.5">{elements}</div>;
 }
 
+const COUNSELLOR_SUGGESTIONS_TA = [
+  "டிஎன்இஏ கட்-ஆஃப் எவ்வாறு கணக்கிடப்படுகிறது?",
+  "கேசிஜி தொழில்நுட்பக் கல்லூரி விவரங்கள் (1311)?",
+  "எஸ்எஸ்என் மற்றும் பிஎஸ்ஜி கல்லூரிகளை ஒப்பிடவும்",
+  "அப்வேர்ட் மூவ்மென்ட் (Upward Movement) எப்படி செயல்படும்?",
+  "சான்றிதழ் சரிபார்ப்புக்கு தேவையான ஆவணங்கள் எவை?",
+  "முதல் பட்டதாரி கட்டணச் சலுகை விவரங்கள் என்ன?",
+];
+
 export default function Counsellor() {
   const { user, profile, academicRecord: authAcademic, counsellingHistory, addCounsellingMessage } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -125,7 +134,9 @@ export default function Counsellor() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [academicRecord, setAcademicRecord] = useState<any>(authAcademic);
   const [activeProvider, setActiveProvider] = useState<LLMProviderType>(llmService.getPrimaryProvider());
-  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>(counsellorSuggestions);
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>(
+    i18n.language === "ta" ? COUNSELLOR_SUGGESTIONS_TA : counsellorSuggestions
+  );
   const [thinking, setThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -142,6 +153,13 @@ export default function Counsellor() {
     }
   }, [authAcademic, user]);
 
+  // Sync suggestions when user switches language
+  useEffect(() => {
+    if (messages.length <= 1) {
+      setDynamicSuggestions(i18n.language === "ta" ? COUNSELLOR_SUGGESTIONS_TA : counsellorSuggestions);
+    }
+  }, [i18n.language, messages.length]);
+
   // Load prior counselling history or initial greeting
   useEffect(() => {
     if (counsellingHistory && counsellingHistory.length > 0) {
@@ -153,10 +171,13 @@ export default function Counsellor() {
         timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : formatTime(),
       })));
     } else {
+      const isTamil = i18n.language === "ta";
       setMessages([
         {
           role: "assistant",
-          content: `Hello ${profile?.display_name || "Aspirant"}! I am your EduPath AI Counsellor, an intelligent, conversational TNEA admissions assistant.\n\nI can answer broad TNEA questions in **English**, **Tamil (தமிழ்)**, or **Tanglish** — covering counselling rules, tentative allotment options, choice filling, upward movement, college codes, branch availability, cut-off calculations, and multi-year historical comparisons (2023, 2024, 2025).\n\nAll answers are grounded in our verified TNEA knowledge base and official database. How can I guide you today?`,
+          content: isTamil
+            ? `வணக்கம் ${profile?.display_name || "மாணவரே"}! நான் உங்கள் EduPath AI TNEA ஆலோசகர் (AI Counsellor).\n\nடிஎன்இஏ (TNEA) பொறியியல் சேர்க்கை தொடர்பான அனைத்து கேள்விகளுக்கும் **தமிழ்**, **ஆங்கிலம்**, அல்லது **தங்கிலிஷ் (Tanglish)** மொழிகளில் நான் உங்களுக்கு வழிகாட்ட தயாராக உள்ளேன்:\n- கல்லூரி குறியீடுகள், கட்-ஆஃப் மற்றும் இடங்கள்\n- கவுன்சிலிங் நடைமுறைகள் மற்றும் சாய்ஸ் ஃபில்லிங் (Choice Filling)\n- மேல்நோக்கு இயக்கம் (Upward Movement) மற்றும் தற்காலிக ஒதுக்கீடு\n- 7.5% அரசுப் பள்ளி மற்றும் முதல் பட்டதாரி உதவித்தொகை\n\nஅனைத்து பதில்களும் அதிகாரப்பூர்வ TNEA ஆவணங்களின் அடிப்படையில் வழங்கப்படுகின்றன. உங்களுக்கு என்ன உதவி வேண்டும்? உங்கள் கேள்வியைக் கேளுங்கள்!`
+            : `Hello ${profile?.display_name || "Aspirant"}! I am your EduPath AI Counsellor, an intelligent, conversational TNEA admissions assistant.\n\nI can answer broad TNEA questions in **English**, **Tamil (தமிழ்)**, or **Tanglish** — covering counselling rules, tentative allotment options, choice filling, upward movement, college codes, branch availability, cut-off calculations, and multi-year historical comparisons (2023, 2024, 2025).\n\nAll answers are grounded in our verified TNEA knowledge base and official database. How can I guide you today?`,
           timestamp: formatTime(),
           sources: [
             { title: "TNEA 2024 Information Brochure", year: 2024, page: 3, section: "General Instructions", url: "https://www.tneaonline.org" },
@@ -165,7 +186,7 @@ export default function Counsellor() {
         },
       ]);
     }
-  }, [counsellingHistory, profile]);
+  }, [counsellingHistory, profile, i18n.language]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -467,7 +488,7 @@ export default function Counsellor() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && sendMessage()}
-          placeholder="Ask any TNEA question in English, Tamil (தமிழ்), or Tanglish..."
+          placeholder={i18n.language === "ta" ? "TNEA பற்றிய கேள்விகளை தமிழில் கேட்கலாம்..." : "Ask any TNEA question in English, Tamil (தமிழ்), or Tanglish..."}
           className="flex-1 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none"
         />
         <button

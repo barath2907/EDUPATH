@@ -308,6 +308,13 @@ export default function CollegeComparison() {
                     <MapPin size={12} className="text-amber-500" />
                     {col.district} District
                   </p>
+                  <Link
+                    to="/trends"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-900 underline mt-1"
+                  >
+                    <TrendingUp size={12} />
+                    View Cutoff Trend & Competitiveness →
+                  </Link>
                 </div>
 
                 <div className="bg-slate-50 rounded-xl p-3 text-xs space-y-1.5 border border-slate-100">

@@ -25,6 +25,17 @@ import type { ModelPredictionInput, ModelPredictionResult } from "./mlPrediction
 import type { RecommendationRequest, RecommendedOption } from "./recommendationEngine";
 import type { ComparisonSessionResult } from "./comparisonEngine";
 import type { AgentResponse } from "./counsellorAgent";
+import type { CutoffTrendSummary } from "./trendAnalysisEngine";
+import type { ModelVersionRecord } from "./adaptivePredictionService";
+import type { PipelineExecutionReport } from "./dataIngestionService";
+import type {
+  InsightsOverviewSummary,
+  DistrictInsightSummary,
+  BranchInsightSummary,
+  CutoffBandItem,
+  EvidenceFilterParams,
+  EvidenceQueryResult
+} from "./tneaDistrictService";
 
 const SESSION_TOKEN_KEY = "edupath_auth_token_v1";
 
@@ -320,6 +331,126 @@ export const EduPathAPI = {
   notifications: {
     async get(): Promise<any[]> {
       return await apiRequest<any[]>("/api/notifications", "GET");
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 12. Cutoff Trend Analysis
+  // ──────────────────────────────────────────────
+  trends: {
+    async getCollegeTrends(collegeCode: string, category = "OC"): Promise<{
+      success: boolean;
+      collegeCode: string;
+      collegeName: string;
+      category: string;
+      trends: CutoffTrendSummary[];
+    }> {
+      return await apiRequest(`/api/trends/college/${collegeCode}?category=${encodeURIComponent(category)}`, "GET");
+    },
+
+    async analyze(params: {
+      collegeCode: string;
+      collegeName: string;
+      branchCode: string;
+      branchName: string;
+      community: string;
+      rawCutoffs: Array<{ year: number; cutoff: number }>;
+    }): Promise<CutoffTrendSummary> {
+      return await apiRequest("/api/trends/analyze", "POST", params);
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 13. ML Model Governance & Drift Monitoring
+  // ──────────────────────────────────────────────
+  governance: {
+    async getModels(): Promise<{ models: ModelVersionRecord[]; production: ModelVersionRecord }> {
+      return await apiRequest("/api/governance/models", "GET");
+    },
+
+    async getDriftStatus(): Promise<{
+      modelVersion: string;
+      driftPSI: number;
+      driftStatus: string;
+      evaluatedAt: string;
+      validationMetrics: any;
+    }> {
+      return await apiRequest("/api/governance/drift-status", "GET");
+    },
+
+    async evaluate(candidateId: string): Promise<{
+      passed: boolean;
+      reasons: string[];
+      metrics: any;
+      driftPSI: number;
+    }> {
+      return await apiRequest("/api/governance/models/evaluate", "POST", { candidateId });
+    },
+
+    async promote(candidateId: string, promotedBy?: string): Promise<{ success: boolean; message: string }> {
+      return await apiRequest("/api/governance/models/promote", "POST", { candidateId, promotedBy });
+    },
+
+    async rollback(): Promise<{ success: boolean; activeVersion: string; message: string }> {
+      return await apiRequest("/api/governance/models/rollback", "POST");
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 14. Data Ingestion & Automated Pipeline
+  // ──────────────────────────────────────────────
+  ingestion: {
+    async runPipeline(params: {
+      filename: string;
+      rawRows: any[];
+      sourceYear: number;
+      sourceUrl: string;
+      sourceDocument?: string;
+      autoPromoteModel?: boolean;
+    }): Promise<PipelineExecutionReport> {
+      return await apiRequest("/api/ingestion/run-pipeline", "POST", params);
+    },
+
+    async getJobs(): Promise<PipelineExecutionReport[]> {
+      return await apiRequest("/api/ingestion/jobs", "GET");
+    },
+
+    async rollbackJob(jobId: string): Promise<{ success: boolean; message: string }> {
+      return await apiRequest(`/api/ingestion/rollback/${jobId}`, "POST");
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 15. TNEA Insights & District-Based Filtering
+  // ──────────────────────────────────────────────
+  insights: {
+    async getOverview(category = "OC"): Promise<InsightsOverviewSummary> {
+      return await apiRequest(`/api/insights/overview?category=${encodeURIComponent(category)}`, "GET");
+    },
+
+    async getDistricts(category = "OC", year = 2025): Promise<DistrictInsightSummary[]> {
+      return await apiRequest(`/api/insights/districts?category=${encodeURIComponent(category)}&year=${year}`, "GET");
+    },
+
+    async getBranches(category = "OC", year = 2025): Promise<BranchInsightSummary[]> {
+      return await apiRequest(`/api/insights/branches?category=${encodeURIComponent(category)}&year=${year}`, "GET");
+    },
+
+    async getCutoffBands(category = "OC"): Promise<CutoffBandItem[]> {
+      return await apiRequest(`/api/insights/cutoff-band?category=${encodeURIComponent(category)}`, "GET");
+    },
+
+    async getMoversShakers(category = "OC"): Promise<{
+      biggestIncreases: any[];
+      biggestDecreases: any[];
+      emergingProgrammes: any[];
+      stableProgrammes: any[];
+    }> {
+      return await apiRequest(`/api/insights/movers-shakers?category=${encodeURIComponent(category)}`, "GET");
+    },
+
+    async getEvidence(params: EvidenceFilterParams): Promise<EvidenceQueryResult> {
+      return await apiRequest("/api/insights/evidence", "POST", params);
     },
   },
 };

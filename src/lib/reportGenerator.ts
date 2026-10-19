@@ -5,9 +5,9 @@
  * falling back to personalized recommendations when no saved colleges exist.
  */
 
-import { generatePersonalizedRecommendations, type RecommendedOption } from "./recommendationEngine";
-import { getCollegesWithCutoffs, getTneaSyncStatus } from "./tneaData";
-import { predictAdmissionProbability } from "./mlPrediction";
+import { generatePersonalizedRecommendations, type RecommendedOption } from "./recommendationEngine.ts";
+import { getCollegesWithCutoffs, getTneaSyncStatus } from "./tneaData.ts";
+import { predictAdmissionProbability } from "./mlPrediction.ts";
 
 export interface StudentReportData {
   reportId: string;

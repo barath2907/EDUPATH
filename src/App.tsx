@@ -14,6 +14,8 @@ import Recommendations from "./pages/Recommendations";
 import Counsellor from "./pages/Counsellor";
 import Report from "./pages/Report";
 import CollegeComparison from "./pages/CollegeComparison";
+import CutoffTrends from "./pages/CutoffTrends";
+import Insights from "./pages/Insights";
 import Admin from "./pages/Admin";
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -64,6 +66,8 @@ export default function App() {
             <Route path="/counsellor" element={<ProtectedLayout><Counsellor /></ProtectedLayout>} />
             <Route path="/report" element={<ProtectedLayout><Report /></ProtectedLayout>} />
             <Route path="/compare" element={<ProtectedLayout><CollegeComparison /></ProtectedLayout>} />
+            <Route path="/trends" element={<ProtectedLayout><CutoffTrends /></ProtectedLayout>} />
+            <Route path="/insights" element={<ProtectedLayout><Insights /></ProtectedLayout>} />
 
             <Route path="/admin" element={<ProtectedLayout><Admin /></ProtectedLayout>} />
             <Route path="*" element={<Navigate to="/" replace />} />

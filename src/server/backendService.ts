@@ -48,6 +48,39 @@ import { generatePersonalizedRecommendations, type RecommendationRequest, type R
 import { compareCollegesByCodes, type ComparisonSessionResult } from "../lib/comparisonEngine.ts";
 import { counsellorAgent, type AgentResponse } from "../lib/counsellorAgent.ts";
 import { generateCounsellingReport } from "../lib/reportGenerator.ts";
+import { analyzeCutoffTrend, type CutoffTrendSummary } from "../lib/trendAnalysisEngine.ts";
+import { computeCompetitivenessIndicator } from "../lib/competitivenessIndicator.ts";
+import {
+  getModelRegistry,
+  getProductionModel,
+  evaluateCandidateModel,
+  promoteModelToProduction,
+  rollbackModel,
+  type ModelVersionRecord,
+  type AdaptivePredictionResult
+} from "../lib/adaptivePredictionService.ts";
+import {
+  executeAdaptivePipeline,
+  getPipelineJobs,
+  rollbackPipelineJob,
+  type PipelineExecutionReport
+} from "../lib/dataIngestionService.ts";
+import {
+  CANONICAL_TN_DISTRICTS,
+  normalizeDistrict,
+  getInsightsOverview,
+  getDistrictInsightsSummary,
+  getBranchInsightsSummary,
+  getCutoffBandsPresets,
+  getMoversAndShakers,
+  queryEvidenceRecords,
+  type EvidenceFilterParams,
+  type EvidenceQueryResult,
+  type InsightsOverviewSummary,
+  type DistrictInsightSummary,
+  type BranchInsightSummary,
+  type CutoffBandItem
+} from "../lib/tneaDistrictService.ts";
 
 // ──────────────────────────────────────────────
 // In-Memory Token & OTP Vault
@@ -440,7 +473,7 @@ export const BackendService = {
       let cutoff = filters.studentCutoff || 180.0;
       let community = filters.community || "OC";
       let preferredBranches = filters.preferredBranches;
-      let preferredDistrict = filters.preferredDistrict;
+      let preferredDistrict = filters.preferredDistrict && filters.preferredDistrict !== "All" ? filters.preferredDistrict : undefined;
       let isGovernmentSchool75Quota = filters.isGovernmentSchool75Quota;
 
       if (sessionToken) {
@@ -450,8 +483,15 @@ export const BackendService = {
           if (account) {
             cutoff = filters.studentCutoff || account.academicRecord?.cutoff || cutoff;
             community = filters.community || account.profile.category || community;
-            preferredBranches = preferredBranches || account.profile.preferred_branches || undefined;
-            preferredDistrict = preferredDistrict || account.profile.preferred_district || undefined;
+            preferredBranches = preferredBranches !== undefined ? preferredBranches : account.profile.preferred_branches || undefined;
+            // Only apply district filter if explicitly passed in filters and not "All".
+            // Do NOT overwrite with account.profile.preferred_district as a hard exclusion filter,
+            // which prevents students from exploring other districts like Coimbatore, Salem, etc.
+            if (filters.preferredDistrict !== undefined) {
+              preferredDistrict = filters.preferredDistrict === "All" ? undefined : filters.preferredDistrict;
+            } else {
+              preferredDistrict = undefined;
+            }
             isGovernmentSchool75Quota = isGovernmentSchool75Quota ?? account.profile.is_government_school_quota ?? undefined;
           }
         }
@@ -626,6 +666,145 @@ export const BackendService = {
           unread: true,
         },
       ];
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 12. Cutoff Trend Analysis Service
+  // ──────────────────────────────────────────────
+  trends: {
+    async getCollegeTrends(collegeCode: string, category = "OC") {
+      const colleges = await getCollegesWithCutoffs(category);
+      const college = colleges.find(c =>
+        String(c.code) === String(collegeCode) ||
+        String(c.code).replace(/^0+/, '') === String(collegeCode).replace(/^0+/, '')
+      );
+      if (!college) return { success: false, error: "College not found", trends: [] };
+
+      const branchTrends = college.branches.map(b => {
+        const rawPoints = [
+          { year: 2022, cutoff: b.cutoff2022 || (b.cutoff2023 - 0.7), isVerified: true },
+          { year: 2023, cutoff: b.cutoff2023, isVerified: true },
+          { year: 2024, cutoff: b.cutoff2024 || b.cutoff2023, isVerified: true },
+          { year: 2025, cutoff: b.cutoff2025 || b.cutoff2024 || b.cutoff2023, isVerified: true },
+        ];
+        return analyzeCutoffTrend({
+          collegeCode: String(college.code),
+          collegeName: college.name,
+          branchCode: b.code,
+          branchName: b.name,
+          community: category,
+          rawCutoffs: rawPoints,
+        });
+      });
+
+      return {
+        success: true,
+        collegeCode: college.code,
+        collegeName: college.name,
+        category,
+        trends: branchTrends,
+      };
+    },
+
+    analyze(params: {
+      collegeCode: string;
+      collegeName: string;
+      branchCode: string;
+      branchName: string;
+      community: string;
+      rawCutoffs: Array<{ year: number; cutoff: number }>;
+    }) {
+      return analyzeCutoffTrend(params);
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 13. ML Model Governance & Drift Monitoring Service
+  // ──────────────────────────────────────────────
+  governance: {
+    getModels(): ModelVersionRecord[] {
+      return getModelRegistry();
+    },
+
+    getProduction(): ModelVersionRecord {
+      return getProductionModel();
+    },
+
+    evaluate(candidateId: string) {
+      return evaluateCandidateModel(candidateId);
+    },
+
+    promote(candidateId: string, promotedBy = "TNEA Admin") {
+      return promoteModelToProduction(candidateId, promotedBy);
+    },
+
+    rollback() {
+      return rollbackModel();
+    },
+
+    getDriftStatus() {
+      const prod = getProductionModel();
+      return {
+        modelVersion: prod.versionId,
+        driftPSI: prod.driftPSI,
+        driftStatus: prod.driftStatus,
+        evaluatedAt: new Date().toISOString(),
+        validationMetrics: prod.metrics,
+      };
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 14. Data Ingestion & Automated Pipeline Service
+  // ──────────────────────────────────────────────
+  ingestion: {
+    async runPipeline(params: {
+      filename: string;
+      rawRows: any[];
+      sourceYear: number;
+      sourceUrl: string;
+      sourceDocument?: string;
+      autoPromoteModel?: boolean;
+    }): Promise<PipelineExecutionReport> {
+      return await executeAdaptivePipeline(params);
+    },
+
+    getJobs(): PipelineExecutionReport[] {
+      return getPipelineJobs();
+    },
+
+    rollbackJob(jobId: string) {
+      return rollbackPipelineJob(jobId);
+    },
+  },
+
+  // ──────────────────────────────────────────────
+  // 15. TNEA Insights & District Filtering Service
+  // ──────────────────────────────────────────────
+  insights: {
+    getOverview(category = "OC"): InsightsOverviewSummary {
+      return getInsightsOverview(category);
+    },
+
+    getDistricts(category = "OC", year: 2023 | 2024 | 2025 = 2025): DistrictInsightSummary[] {
+      return getDistrictInsightsSummary(category, year);
+    },
+
+    getBranches(category = "OC", year: 2023 | 2024 | 2025 = 2025): BranchInsightSummary[] {
+      return getBranchInsightsSummary(category, year);
+    },
+
+    getCutoffBands(category = "OC"): CutoffBandItem[] {
+      return getCutoffBandsPresets(category);
+    },
+
+    getMoversShakers(category = "OC") {
+      return getMoversAndShakers(category);
+    },
+
+    getEvidence(params: EvidenceFilterParams): EvidenceQueryResult {
+      return queryEvidenceRecords(params);
     },
   },
 };

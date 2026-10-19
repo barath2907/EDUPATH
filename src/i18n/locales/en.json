@@ -40,10 +40,12 @@
     "dashboard": "Dashboard",
     "profile": "My Profile",
     "calculator": "Cutoff Calculator",
+    "insights": "TNEA Insights",
     "recommendations": "Recommendations",
     "counsellor": "AI Counsellor",
     "report": "My Report",
     "compare": "Compare Colleges",
+    "trends": "Cutoff Trends",
     "dataImport": "Data Import",
     "menu": "Main Menu",
     "tnea": "TNEA Counselling"

@@ -3,8 +3,8 @@
  * Compares selected colleges side-by-side using structured TNEA historical data (2023, 2024, 2025).
  */
 
-import { getCollegesWithCutoffs, type CollegeWithBranches, type BranchSummary } from "./tneaData";
-import { predictAdmissionProbability, type ModelPredictionResult } from "./mlPrediction";
+import { getCollegesWithCutoffs, type CollegeWithBranches, type BranchSummary } from "./tneaData.ts";
+import { predictAdmissionProbability, type ModelPredictionResult } from "./mlPrediction.ts";
 
 export interface ComparisonMetrics {
   collegeCode: string;

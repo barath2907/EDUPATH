@@ -210,6 +210,127 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
       return { status: 200, data: notifs };
     }
 
+    // ──────────────────────────────────────────────
+    // 12. Cutoff Trend Analysis Routes
+    // ──────────────────────────────────────────────
+    if (path.startsWith("/api/trends/college/") && method === "GET") {
+      const code = path.replace("/api/trends/college/", "").trim();
+      const category = parsedUrl.searchParams.get("category") || "OC";
+      const res = await BackendService.trends.getCollegeTrends(code, category);
+      return { status: res.success ? 200 : 404, data: res };
+    }
+
+    if (path === "/api/trends/analyze" && method === "POST") {
+      const res = BackendService.trends.analyze(req.body);
+      return { status: 200, data: res };
+    }
+
+    // ──────────────────────────────────────────────
+    // 13. ML Model Governance & Drift Monitoring Routes
+    // ──────────────────────────────────────────────
+    if (path === "/api/governance/models" && method === "GET") {
+      const models = BackendService.governance.getModels();
+      const prod = BackendService.governance.getProduction();
+      return { status: 200, data: { models, production: prod } };
+    }
+
+    if (path === "/api/governance/drift-status" && method === "GET") {
+      const drift = BackendService.governance.getDriftStatus();
+      return { status: 200, data: drift };
+    }
+
+    if (path === "/api/governance/models/evaluate" && method === "POST") {
+      const { candidateId } = req.body || {};
+      if (!candidateId) return { status: 400, data: { error: "candidateId is required" } };
+      const res = BackendService.governance.evaluate(candidateId);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/governance/models/promote" && method === "POST") {
+      const { candidateId, promotedBy } = req.body || {};
+      if (!candidateId) return { status: 400, data: { error: "candidateId is required" } };
+      const res = BackendService.governance.promote(candidateId, promotedBy);
+      return { status: res.success ? 200 : 400, data: res };
+    }
+
+    if (path === "/api/governance/models/rollback" && method === "POST") {
+      const res = BackendService.governance.rollback();
+      return { status: res.success ? 200 : 400, data: res };
+    }
+
+    // ──────────────────────────────────────────────
+    // 14. Data Ingestion & Automated Pipeline Routes
+    // ──────────────────────────────────────────────
+    if (path === "/api/ingestion/run-pipeline" && method === "POST") {
+      const res = await BackendService.ingestion.runPipeline(req.body);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/ingestion/jobs" && method === "GET") {
+      const jobs = BackendService.ingestion.getJobs();
+      return { status: 200, data: jobs };
+    }
+
+    if (path.startsWith("/api/ingestion/rollback/") && method === "POST") {
+      const jobId = path.replace("/api/ingestion/rollback/", "").trim();
+      const res = BackendService.ingestion.rollbackJob(jobId);
+      return { status: res.success ? 200 : 400, data: res };
+    }
+
+    // ──────────────────────────────────────────────
+    // 15. TNEA Insights & District-Based Filtering Routes
+    // ──────────────────────────────────────────────
+    if (path === "/api/insights/overview" && method === "GET") {
+      const category = parsedUrl.searchParams.get("category") || "OC";
+      const res = BackendService.insights.getOverview(category);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/insights/districts" && method === "GET") {
+      const category = parsedUrl.searchParams.get("category") || "OC";
+      const year = (parseInt(parsedUrl.searchParams.get("year") || "2025", 10) || 2025) as 2023 | 2024 | 2025;
+      const res = BackendService.insights.getDistricts(category, year);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/insights/branches" && method === "GET") {
+      const category = parsedUrl.searchParams.get("category") || "OC";
+      const year = (parseInt(parsedUrl.searchParams.get("year") || "2025", 10) || 2025) as 2023 | 2024 | 2025;
+      const res = BackendService.insights.getBranches(category, year);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/insights/cutoff-band" && method === "GET") {
+      const category = parsedUrl.searchParams.get("category") || "OC";
+      const res = BackendService.insights.getCutoffBands(category);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/insights/movers-shakers" && method === "GET") {
+      const category = parsedUrl.searchParams.get("category") || "OC";
+      const res = BackendService.insights.getMoversShakers(category);
+      return { status: 200, data: res };
+    }
+
+    if (path === "/api/insights/evidence" && (method === "GET" || method === "POST")) {
+      const params = method === "POST" ? (req.body || {}) : {
+        district: parsedUrl.searchParams.get("district") || undefined,
+        branchCode: parsedUrl.searchParams.get("branchCode") || undefined,
+        category: parsedUrl.searchParams.get("category") || "OC",
+        year: parsedUrl.searchParams.get("year") ? parseInt(parsedUrl.searchParams.get("year")!, 10) : 2025,
+        minCutoff: parsedUrl.searchParams.get("minCutoff") ? parseFloat(parsedUrl.searchParams.get("minCutoff")!) : undefined,
+        maxCutoff: parsedUrl.searchParams.get("maxCutoff") ? parseFloat(parsedUrl.searchParams.get("maxCutoff")!) : undefined,
+        collegeType: parsedUrl.searchParams.get("collegeType") || undefined,
+        searchQuery: parsedUrl.searchParams.get("searchQuery") || undefined,
+        sortBy: (parsedUrl.searchParams.get("sortBy") as any) || "cutoff",
+        sortOrder: (parsedUrl.searchParams.get("sortOrder") as any) || "desc",
+        page: parsedUrl.searchParams.get("page") ? parseInt(parsedUrl.searchParams.get("page")!, 10) : 1,
+        pageSize: parsedUrl.searchParams.get("pageSize") ? parseInt(parsedUrl.searchParams.get("pageSize")!, 10) : 15,
+      };
+      const res = BackendService.insights.getEvidence(params);
+      return { status: 200, data: res };
+    }
+
     return { status: 404, data: { error: `Endpoint not found: ${method} ${path}` } };
   } catch (err: any) {
     console.error(`[ApiRouter Error] ${method} ${path}:`, err);

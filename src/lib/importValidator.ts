@@ -180,8 +180,8 @@ export function validateImportRows(rows: RawRow[]): ValidationResult {
     }
 
     const cutoff = parseFloat(raw.cutoff);
-    if (isNaN(cutoff) || cutoff < 0 || cutoff > 200) {
-      errors.push({ row: rowNum, field: "cutoff", message: `Cutoff "${raw.cutoff}" must be 0–200`, raw: raw.cutoff });
+    if (isNaN(cutoff) || cutoff < 77.5 || cutoff > 200) {
+      errors.push({ row: rowNum, field: "cutoff", message: `Cutoff "${raw.cutoff}" must be 77.50–200.00`, raw: raw.cutoff });
       return;
     }
 

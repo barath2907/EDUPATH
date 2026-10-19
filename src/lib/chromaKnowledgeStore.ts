@@ -276,6 +276,178 @@ Special reservation counselling is conducted in-person / online ahead of the gen
 1. Supplementary Counselling: Conducted after Round 4 completion for eligible candidates who passed supplementary exams or could not register during earlier rounds. Unfilled vacancies in government and private engineering colleges are offered.
 2. SCA-to-SC Conversion: Unfilled seats reserved for Scheduled Caste Arunthathiyar (SCA) category after regular counselling are converted to Scheduled Caste (SC) category candidates based on merit.`,
   },
+  {
+    chunk_id: "tnea-rank-13",
+    source: "TNEA Official Information Brochure 2024",
+    title: "TNEA Rank List Preparation & Tie-Breaking Rules",
+    year: 2024,
+    category: "PROCEDURE",
+    page: 15,
+    document_type: "Official Brochure",
+    section: "5. Merit Rank & Tie-Break Rules",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-05-01",
+    keywords: ["rank list", "rank", "overall rank", "community rank", "tie break", "tie-breaking", "random number", "same cutoff", "merit rank"],
+    content: `TNEA Merit Rank List & Official Tie-Breaking Hierarchy:
+When two or more candidates obtain identical aggregate cut-off marks (out of 200.00), their inter-se merit rank is determined by applying the following official tie-breaking rules in strict priority:
+1. Higher Percentage of marks in Mathematics in Class 12 (HSC).
+2. Higher Percentage of marks in Physics in Class 12 (HSC).
+3. Higher Percentage of marks in the 4th optional subject (e.g. Chemistry, Computer Science, Biology).
+4. Date of Birth: The candidate older in age is awarded the higher merit rank.
+5. Random Number: If all academic marks and dates of birth are completely identical, the 10-digit unique Random Number assigned by TNEA is compared. The candidate with the HIGHER random number value gets the superior merit rank.
+Rank Lists Published: Overall General Rank, Communal Category Rank, 7.5% Government School Rank, and Special Reservation Ranks (Differently Abled, Ex-Servicemen, Sports).`,
+  },
+  {
+    chunk_id: "tnea-choice-14",
+    source: "TNEA Online Counselling User Manual 2024",
+    title: "Choice Filling Strategy & Priority Locking",
+    year: 2024,
+    category: "CHOICE_FILLING",
+    page: 20,
+    document_type: "Guidelines",
+    section: "9. Choice Filling Strategy & Locking",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-06-01",
+    keywords: ["choice filling", "choice lock", "choice order", "how to fill choices", "choice filling strategy", "choice list", "lock choices", "choice locking"],
+    content: `TNEA Choice Filling Strategy & Rules:
+1. Unlimited Choices: Candidates can add as many college + branch choices as they desire. There is NO upper limit. Adding 50 to 100+ choices is strongly advised.
+2. The 3-Tier Choice Filling Framework:
+   • Tier 1: Dream / Aspirational Choices (Cutoff 2 to 5 marks above your score) — Place top-tier colleges like CEG, MIT, PSG Tech, SSN at the top.
+   • Tier 2: Realistic Target Choices (Cutoff within ±1.5 marks of your score) — Highly probable matches matching your preference.
+   • Tier 3: Safe Backup Choices (Cutoff 3 to 10 marks below your score) — Guaranteed safety net choices to ensure you never go without a seat.
+3. Choice Ordering Priority: The allotment algorithm evaluates choices strictly from Choice #1 downwards. The first choice where a seat is available in your quota is allotted. Never place a less-preferred college above a more-preferred one.
+4. Choice Locking: Choice filling window remains open for 3 days until 5:00 PM on Day 3. You can add, delete, reorder choices at any time. Once locked, choices cannot be edited. If not locked manually, the portal automatically locks your saved choices at the 5:00 PM deadline.`,
+  },
+  {
+    chunk_id: "tnea-fee-15",
+    source: "Tamil Nadu Fee Fixation Committee & DTE Government Order",
+    title: "Tuition Fees & Scholarship Structure",
+    year: 2024,
+    category: "PROCEDURE",
+    page: 12,
+    document_type: "Government Order",
+    section: "7. Engineering Fee Structure",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-05-15",
+    keywords: ["fees", "tuition fees", "fee structure", "how much fee", "cost", "government college fee", "self financing fee", "management quota fee", "scholarship", "hostel fee"],
+    content: `Official TNEA Engineering Tuition Fee Structure:
+1. Anna University Departments (CEG Guindy, MIT Chromepet, ACT, SAP): ~₹30,000 to ₹40,000 per academic year.
+2. Government & Government-Aided Engineering Colleges (e.g. GCT Coimbatore, TCE Madurai, CIT Coimbatore): ~₹10,000 to ₹15,000 per academic year.
+3. Self-Financing Engineering Colleges (Government Quota Allotted via TNEA Single Window):
+   • Non-NBA Accredited Courses: Fixed at ₹50,000 per year tuition fee.
+   • NBA Accredited Courses: Fixed at ₹55,000 per year tuition fee.
+4. First Generation Graduate (FG) Concession: Flat ₹25,000 per year tuition fee waiver provided by the Tamil Nadu Government if no family member holds a degree.
+5. 7.5% Government School Preferential Quota: 100% Free Education — All tuition fees, development charges, examination fees, university fees, hostel room rent, and mess charges are 100% paid by the Tamil Nadu Government.
+6. Post Matric Scholarship (PMS): SC/SCA/ST and converted Christian candidates whose family annual income is below ₹2.5 Lakhs receive 100% tuition fee reimbursement.`,
+  },
+  {
+    chunk_id: "tnea-rounds-16",
+    source: "TNEA Counselling Schedule & Cutoff Bands 2024",
+    title: "Counselling Rounds & Cut-off Bands",
+    year: 2024,
+    category: "PROCEDURE",
+    page: 4,
+    document_type: "Counselling Procedure",
+    section: "3. Round-Wise Schedule",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-06-15",
+    keywords: ["rounds", "counselling rounds", "round 1", "round 2", "round 3", "round 4", "rank range", "cutoff band", "counselling schedule"],
+    content: `TNEA 4-Round Counselling Process:
+General Academic and Vocational counselling is conducted in 4 progressive rounds based on General Rank bands:
+• Round 1: Top cutoffs (~200.00 down to ~177.00 marks; General Rank 1 to ~25,000). Premier seats in CEG, MIT, PSG Tech, SSN, GCT, CIT are filled.
+• Round 2: Cutoffs ~176.99 down to ~145.00 marks; General Rank ~25,001 to ~70,000. Core branches in reputed autonomous and self-financing colleges.
+• Round 3: Cutoffs ~144.99 down to ~115.00 marks; General Rank ~70,001 to ~1,20,000.
+• Round 4: Cutoffs ~114.99 down to ~77.50 marks; General Rank ~1,20,001 to end of rank list.
+Each round follows a strict 5-day cycle:
+- Day 1 to 3 (5:00 PM): Choice filling and choice locking.
+- Day 4 (10:00 AM): Tentative allotment publication.
+- Day 4 to 5 (5:00 PM): Confirmation of tentative allotment by candidate.
+- Day 6: Final provisional allotment release & Upward movement processing.`,
+  },
+  {
+    chunk_id: "tnea-compare-17",
+    source: "EduPath Institutional Benchmark & DTE Allotment Data",
+    title: "KCG College of Technology vs SSN College of Engineering",
+    year: 2024,
+    category: "FAQ",
+    page: 1,
+    document_type: "Guidelines",
+    section: "College Comparison: KCG (1311) vs SSN (1315)",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-06-01",
+    keywords: ["compare kcg and ssn", "kcg vs ssn", "k c g college of technology and ssn", "difference between kcg and ssn", "kcg ssn comparison", "which is better kcg or ssn"],
+    content: `Comprehensive Comparison: KCG College of Technology (1311) vs SSN College of Engineering (1315):
+1. Sri Sivasubramaniya Nadar (SSN) College of Engineering (TNEA Code: 1315):
+   • Location: Kalavakkam, OMR (Old Mahabalipuram Road), Chengalpattu / Chennai.
+   • Status: Autonomous, NAAC A++ Grade, NBA Accredited, Founded by Shiv Nadar (HCL).
+   • Cutoffs (OC 2024-2025): CSE: 196.20 - 197.50 | IT: 195.00 - 196.20 | ECE: 194.50 - 195.80 | EEE: 189.50 - 191.00.
+   • Selectivity: Tier 1 Autonomous Institution. Among top 3 private colleges in Tamil Nadu alongside PSG Tech.
+   • Placements: Average package ~₹7.5 to 8.5 LPA; highest packages exceed ₹40+ LPA. Top MNCs, product companies, and research labs recruit heavily.
+   • Tuition Fee: ₹55,000/yr (Govt Quota, Accredited) + college fee structure.
+
+2. KCG College of Technology (TNEA Code: 1311):
+   • Location: Karapakkam, OMR (Old Mahabalipuram Road), Chennai.
+   • Status: Autonomous Institution, NAAC A+ Grade, NBA Accredited, part of Hindustan Group of Institutions.
+   • Cutoffs (OC 2024-2025): CSE: 172.50 - 176.00 | IT: 168.00 - 172.00 | AI&DS: 169.50 - 173.00 | ECE: 163.00 - 167.50.
+   • Selectivity: Tier 2 Autonomous Institution with strong industry ties along the Chennai OMR IT corridor.
+   • Placements: Average package ~₹4.5 to 5.5 LPA; highest packages around ₹12 to 14 LPA. Excellent placement record in IT services and core engineering.
+   • Tuition Fee: ₹55,000/yr (Govt Quota, Accredited).
+
+Strategic Choice Guidance:
+• If your cut-off is 194.00+: SSN is a premier top-tier choice for Computer Science, IT, and Electronics.
+• If your cut-off is in the 165.00 to 178.00 range: KCG College of Technology is an excellent, proven autonomous college in Chennai with superb OMR accessibility and strong campus placements. In TNEA choice filling, students typically place SSN in Tier 1 (Dream) and KCG in Tier 2 (Target/Safe) based on their score.`,
+  },
+  {
+    chunk_id: "tnea-branch-18",
+    source: "TNEA Engineering Branch Guidance Handbook 2024",
+    title: "Engineering Branch Selection Guide",
+    year: 2024,
+    category: "FAQ",
+    page: 7,
+    document_type: "Guidelines",
+    section: "Branch Selection: CSE vs IT vs AI&DS vs ECE vs EEE vs Mech",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-05-20",
+    keywords: ["branch comparison", "cse vs it", "ai ds vs cse", "ece vs cse", "which branch to choose", "engineering branches", "core vs it"],
+    content: `TNEA Engineering Branch Selection Guide:
+1. CSE vs IT vs AI&DS:
+   • Computer Science and Engineering (CS): Broadest foundation covering computer architecture, algorithms, compilers, OS, software engineering, and AI. Maximum flexibility for global opportunities.
+   • Information Technology (IT): Closely aligned with CSE (~85% syllabus overlap) with extra emphasis on web systems, cloud computing, networking, and database administration. Treated equally by almost all campus recruiters.
+   • Artificial Intelligence & Data Science (AI / AD): Specialised curriculum focusing heavily on machine learning, deep learning, statistical modeling, big data analytics, and NLP.
+2. Electronics & Communication Engineering (ECE):
+   • Extremely versatile dual-scope branch. Eligible for both software/IT roles and booming semiconductor/VLSI, embedded systems, telecom, and IoT core sectors.
+3. Electrical & Electronics (EEE), Mechanical (ME), Civil (CE):
+   • Fundamental core engineering disciplines with massive public sector (TANGEDCO, BHEL, ONGC, Railways) and private infrastructure/automotive careers.`,
+  },
+  {
+    chunk_id: "tnea-kcg-19",
+    source: "TNEA Official Directory & DTE Allotment Records",
+    title: "KCG College of Technology (1311) Institutional Profile",
+    year: 2024,
+    category: "FAQ",
+    page: 1,
+    document_type: "Guidelines",
+    section: "College Profile: KCG College of Technology (1311)",
+    url: "https://www.tneaonline.org",
+    last_updated: "2024-06-01",
+    keywords: [
+      "kcg", "k c g", "kcg college", "kcg college of technology", "1311", "kcg tech",
+      "கேசிஜி", "கே சி ஜி", "கேசிஜி கல்லூரி", "கேசிஜி காலேஜ்", "கேசிஜி பற்றி", "kcg details", "kcg cutoff"
+    ],
+    content: `KCG College of Technology (TNEA Code: 1311):
+• Overview: Autonomous engineering institution affiliated to Anna University, accredited with NAAC A+ Grade and NBA accredited for major departments. Part of the prestigious Hindustan Group of Institutions.
+• Location: Karapakkam, OMR (Old Mahabalipuram Road), Chennai – 600097. Prime IT corridor connectivity.
+• Available Branches & Cutoffs (OC 2024):
+  - Computer Science & Engineering (CSE): 174.50
+  - Information Technology (IT): 170.50
+  - Artificial Intelligence & Data Science (AIDS): 172.00
+  - Electronics & Communication (ECE): 165.50
+  - Electrical & Electronics (EEE): 157.50
+  - Mechanical Engineering (ME): 144.50
+• Placements: Average package ~₹4.5 - 5.5 LPA; highest package ₹12 - 14 LPA. Prominent recruiters include Zoho, Virtusa, TCS, Infosys, Cognizant, Hexaware.
+• Tuition Fee: ₹55,000/year (Govt Quota, Accredited).
+• Tamil Nadu Single Window Counselling Role: Ideal Target/Safe choice for students in the 165.00 - 178.00 cutoff range in Round 1 & Round 2.`,
+  },
 ];
 
 /**
@@ -291,7 +463,7 @@ export function queryChromaKnowledgeBase(
   } = {}
 ): Array<{ chunk: KnowledgeDocumentChunk; score: number }> {
   const { category, topK = 3, threshold = 0.15 } = options;
-  const qTokens = query.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+  const qTokens = query.toLowerCase().replace(/[^a-z0-9\s\u0B80-\u0BFF]/g, " ").split(/\s+/).filter(Boolean);
 
   const scored = CHROMA_TNEA_KNOWLEDGE_BASE.map(chunk => {
     if (category && chunk.category !== category) {
